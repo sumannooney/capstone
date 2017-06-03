@@ -9,6 +9,76 @@ df.housing$build_year[df.housing$build_year == 20052009] <- 2007
 df.housing[which(df.housing$build_year == 4965), "build_year"] = 1961
 
 
+df.housing[is.na(df.housing[,154:292]),154:292]
+df.missingvalues<- map_dbl(df.housing[,154:292], function(x){sum(is.na(x))})
+df.missingvalues<- df.missingvalues[df.missingvalues>0]
+as.data.frame(df.missingvalues)
+
+names(df.missingvalues[grep("_500",names(df.housing),)])
+
+colnames.500<-colnames(df.housing[,grep("_500$", names(df.housing))])
+
+colnames.500 <- colnames.500[-grep("price_500",colnames.500)]
+colnames.500 <- colnames.500[-grep("sqm_500",colnames.500)]
+
+df.housing.500 <- df.housing[,c(colnames.500,"sub_area")]
+
+#df.housing.500$quint <- bin(df.housing.500$green_part_500, method = "content")
+#library(OneR)
+
+df.housing.500<-df.housing.500 %>%
+          #select(sub_area,office_count_500) %>%
+          group_by(sub_area) %>%
+          mutate(quantile = bin(green_part_500,nbins=10, method = "content"),mean= median(green_part_500)) %>%
+          mutate(splitQuantile = as.numeric(sub(".*,(.*?)].*","\\1",quantile)))%>%
+          #mutate(green_part_500_new=ifelse(splitQuantile== max(splitQuantile),mean,green_part_500))
+          mutate(facLevel=as.numeric(factor(splitQuantile)),green_part_500=ifelse(is.na(splitQuantile),mean,green_part_500))
+
+
+#Need to convert to function the above dplyr 
+assignFac<- function(x,columns)
+  {
+  x<- "prom_part_500"
+  y <- df.housing.500[,c(x,"sub_area")]
+    temp.df<-y %>%
+      group_by(sub_area) %>%
+      mutate(x=ifelse(is.na(x),median(x),x)) %>%
+      mutate(quantile = bin(x,nbins=10, method = "content")) %>%
+      mutate(splitQuantile = as.numeric(sub(".*,(.*?)].*","\\1",quantile)))%>%
+      mutate(facLevel=as.numeric(factor(splitQuantile)))
+      return(temp.df$facLevel)
+}
+
+
+#assignFac("prom_part_500")
+
+b<- df.housing.500[df.housing.500$sub_area=="Ajeroport",]
+
+df.housing.500<- df.housing.500 %>% 
+  group_by(sub_area) %>%
+  mutate(green_part_500_new=ifelse(splitQuantile== max(splitQuantile),mean,green_part_500))
+
+
+#str(df.housing.500$quantile)
+#df.housing.500$quantile=as.character(df.housing.500$quantile)
+#df.housing.500$splitQuantile<- as.numeric(sub(".*,(.*?)].*","\\1",df.housing.500$quantile))
+#class(df.housing.500$splitQuantile)
+
+#sum(is.na(df.housing.500$splitQuantile))          
+
+#df.housing.500<-df.housing.500[!is.na(df.housing.500$maxQuantile),]
+#df.housing.500$maxQuantile=as.numeric(df.housing.500$maxQuantile)
+#df.housing.500$mean=as.numeric(df.housing.500$mean)
+
+
+boxplot(df.housing.500$green_part_500_new)
+boxplot(df.housing.500$green_part_500)
+
+
+  #cut(my.df$x, breaks = quantile(my.df$x, probs = seq(0, 1, 0.25)), 
+#    include.lowest = TRUE, labels = 1:4)
+?rank
+
 df.housing=merge(df.housing, sub.districts, by.x = "sub_area", by.y = "sub_area")
 df.missingpct = data.frame();
 unique.districts <- unique(sub.districts$district)

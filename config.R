@@ -1,4 +1,10 @@
-workingdirectory <- "/Users/tejo/UW450/Capstone"
+#Set working directory based on user login either Tejo or Suman
+if(Sys.info()["login"]=="sumannooney")
+{
+  workingdirectory="/Users/sumannooney/Documents/Data Science/Data at Scale/Capstone/capstone"
+  } else {
+  workingdirectory <- "/Users/tejo/UW450/Capstone"    
+  }
 setwd(workingdirectory)
 cat("\014")
 getwd()
